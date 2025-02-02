@@ -6,7 +6,7 @@ from .base_client import BaseClient
 
 
 class ClaudeClient(BaseClient):
-    def __init__(self, api_key: str, api_url: str = "https://api.anthropic.com/v1/messages"):
+    def __init__(self, api_key: str, api_url: str = "https://aihubmix.com/v1/messages"):
         """初始化 Claude 客户端
         
         Args:
