@@ -6,12 +6,12 @@ from .base_client import BaseClient
 
 
 class ClaudeClient(BaseClient):
-    def __init__(self, api_key: str, api_url: str = "https://aihubmix.com/v1/messages"):
+    def __init__(self, api_key: str, api_url: str = "https://aihubmix.com/v1"):
         """初始化 Claude 客户端
         
         Args:
             api_key: Claude API密钥
-            api_url: Claude API地址
+            api_url: Claude API基础地址
         """
         super().__init__(api_key, api_url)
         
@@ -28,10 +28,9 @@ class ClaudeClient(BaseClient):
                 内容: 实际的文本内容
         """
         headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-            "accept": "text/event-stream",
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
         }
         
         data = {
@@ -41,7 +40,9 @@ class ClaudeClient(BaseClient):
             "stream": True
         }
         
-        async for chunk in self._make_request(headers, data):
+        url = f"{self.api_url}/chat/completions"
+        
+        async for chunk in self._make_request(headers, data, url):
             chunk_str = chunk.decode('utf-8')
             if not chunk_str.strip():
                 continue
@@ -54,8 +55,9 @@ class ClaudeClient(BaseClient):
                         
                     try:
                         data = json.loads(json_str)
-                        if data.get('type') == 'content_block_delta':
-                            content = data.get('delta', {}).get('text', '')
+                        if 'choices' in data and len(data['choices']) > 0:
+                            delta = data['choices'][0].get('delta', {})
+                            content = delta.get('content', '')
                             if content:
                                 yield "answer", content
                     except json.JSONDecodeError:
