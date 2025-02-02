@@ -6,16 +6,16 @@ from .base_client import BaseClient
 
 
 class ClaudeClient(BaseClient):
-    def __init__(self, api_key: str, api_url: str = "https://aihubmix.com/v1"):
+    def __init__(self, api_key: str, api_url: str = "https://openrouter.ai/api/v1/chat/completions"):
         """初始化 Claude 客户端
         
         Args:
-            api_key: Claude API密钥
-            api_url: Claude API基础地址
+            api_key: OpenRouter API密钥
+            api_url: OpenRouter API完整地址
         """
         super().__init__(api_key, api_url)
         
-    async def stream_chat(self, messages: list, model: str = "claude-3-5-sonnet-20241022") -> AsyncGenerator[tuple[str, str], None]:
+    async def stream_chat(self, messages: list, model: str = "anthropic/claude-3-sonnet") -> AsyncGenerator[tuple[str, str], None]:
         """流式对话
         
         Args:
@@ -30,7 +30,6 @@ class ClaudeClient(BaseClient):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "Accept": "text/event-stream",
         }
         
         data = {
@@ -40,9 +39,7 @@ class ClaudeClient(BaseClient):
             "stream": True
         }
         
-        url = f"{self.api_url}/chat/completions"
-        
-        async for chunk in self._make_request(headers, data, url):
+        async for chunk in self._make_request(headers, data):
             chunk_str = chunk.decode('utf-8')
             if not chunk_str.strip():
                 continue
