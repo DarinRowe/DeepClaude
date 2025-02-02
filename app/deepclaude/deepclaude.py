@@ -10,12 +10,16 @@ from app.clients import DeepSeekClient, ClaudeClient
 class DeepClaude:
     """处理 DeepSeek 和 Claude API 的流式输出衔接"""
     
-    def __init__(self, deepseek_api_key: str, claude_api_key: str, deepseek_api_url: str = "https://api.deepseek.com/v1/chat/completions", claude_api_url: str = "https://api.anthropic.com/v1/messages"):
+    def __init__(self, deepseek_api_key: str, claude_api_key: str, 
+                 deepseek_api_url: str = "https://api.deepseek.com/v1/chat/completions", 
+                 claude_api_url: str = None):
         """初始化 API 客户端
         
         Args:
             deepseek_api_key: DeepSeek API密钥
             claude_api_key: Claude API密钥
+            deepseek_api_url: DeepSeek API地址
+            claude_api_url: Claude API地址，如果为None则使用默认地址
         """
         self.deepseek_client = DeepSeekClient(deepseek_api_key, deepseek_api_url)
         self.claude_client = ClaudeClient(claude_api_key, claude_api_url)
