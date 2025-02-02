@@ -10,8 +10,6 @@ app = FastAPI(title="DeepClaude API")
 # 从环境变量获取 API 密钥、地址以及模型名称
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL")
-CLAUDE_API_URL = os.getenv("CLAUDE_API_URL")
-
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL")
@@ -46,8 +44,7 @@ async def chat_completions(request: Request):
         if not DEEPSEEK_API_KEY or not CLAUDE_API_KEY:
             return {"error": "未设置 API 密钥"}
             
-        deep_claude = DeepClaude(DEEPSEEK_API_KEY, CLAUDE_API_KEY, 
-                                DEEPSEEK_API_URL, CLAUDE_API_URL)
+        deep_claude = DeepClaude(DEEPSEEK_API_KEY, CLAUDE_API_KEY, DEEPSEEK_API_URL)
         
         # 4. 返回流式响应
         return StreamingResponse(

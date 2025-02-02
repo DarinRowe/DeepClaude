@@ -6,15 +6,14 @@ from .base_client import BaseClient
 
 
 class ClaudeClient(BaseClient):
-    def __init__(self, api_key: str, api_url: str = None):
+    def __init__(self, api_key: str, api_url: str = "https://api.anthropic.com/v1/messages"):
         """初始化 Claude 客户端
         
         Args:
             api_key: Claude API密钥
-            api_url: Claude API地址，如果为None则使用默认地址
+            api_url: Claude API地址
         """
-        default_url = "https://api.anthropic.com/v1/messages"
-        super().__init__(api_key, api_url or default_url)
+        super().__init__(api_key, api_url)
         
     async def stream_chat(self, messages: list, model: str = "claude-3-5-sonnet-20241022") -> AsyncGenerator[tuple[str, str], None]:
         """流式对话
