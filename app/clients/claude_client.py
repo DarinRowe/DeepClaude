@@ -1,19 +1,23 @@
 """Claude API 客户端"""
-import json
 from typing import AsyncGenerator
+from openai import AsyncOpenAI
 from app.utils.logger import logger
 from .base_client import BaseClient
 
 
 class ClaudeClient(BaseClient):
-    def __init__(self, api_key: str, api_url: str = "https://openrouter.ai/api/v1/chat/completions"):
+    def __init__(self, api_key: str, api_url: str = "https://openrouter.ai/api/v1"):
         """初始化 Claude 客户端
         
         Args:
             api_key: OpenRouter API密钥
-            api_url: OpenRouter API完整地址
+            api_url: OpenRouter API基础地址
         """
         super().__init__(api_key, api_url)
+        self.client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=api_url
+        )
         
     async def stream_chat(self, messages: list, model: str = "anthropic/claude-3-sonnet") -> AsyncGenerator[tuple[str, str], None]:
         """流式对话
@@ -27,35 +31,22 @@ class ClaudeClient(BaseClient):
                 内容类型: "answer"
                 内容: 实际的文本内容
         """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        
-        data = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": 8192,
-            "stream": True
-        }
-        
-        async for chunk in self._make_request(headers, data):
-            chunk_str = chunk.decode('utf-8')
-            if not chunk_str.strip():
-                continue
-                
-            for line in chunk_str.split('\n'):
-                if line.startswith('data: '):
-                    json_str = line[6:]  # 去掉 'data: ' 前缀
-                    if json_str.strip() == '[DONE]':
-                        return
-                        
-                    try:
-                        data = json.loads(json_str)
-                        if 'choices' in data and len(data['choices']) > 0:
-                            delta = data['choices'][0].get('delta', {})
-                            content = delta.get('content', '')
-                            if content:
-                                yield "answer", content
-                    except json.JSONDecodeError:
-                        continue
+        try:
+            stream = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True,
+                max_tokens=8192,
+                temperature=0.7,
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/wangjueszu/chatgpt-web-share",
+                    "X-Title": "chatgpt-web-share",
+                }
+            )
+            
+            async for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield "answer", chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            logger.error(f"OpenRouter API 请求失败: {e}")
