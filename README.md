@@ -8,6 +8,10 @@
 
 </div>
 
+<div>
+<h3 style="color: #FF9909"> 特别说明：对于不太会部署，只是希望使用上最强 DeepClaude 组合的朋友，请直接链接 Erlich（微信：geekthings）购买按量付费的 API 即可，国内可以直接访问 </h3>
+</div>
+
 # Table of Contents
 
 - [Table of Contents](#table-of-contents)
@@ -17,7 +21,7 @@
   - [1. 获得运行所需的 API](#1-获得运行所需的-api)
   - [2. 开始运行](#2-开始运行)
 - [Deployment](#deployment)
-  - [一键部署到 Zeabur](#一键部署到-zeabur)(测试发现部署到自己服务器会出问题)
+  - [一键部署到 Zeabur](#一键部署到-zeabur)
 - [Technology Stack](#technology-stack)
 - [Star History](#star-history)
 - [Buy me a coffee](#buy-me-a-coffee)

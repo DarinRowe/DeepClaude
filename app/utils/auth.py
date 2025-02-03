@@ -5,12 +5,19 @@ from dotenv import load_dotenv
 from app.utils.logger import logger
 
 # 加载 .env 文件
-load_dotenv()
+logger.info(f"当前工作目录: {os.getcwd()}")
+logger.info("尝试加载.env文件...")
+load_dotenv(override=True)  # 添加override=True强制覆盖已存在的环境变量
 
 # 获取环境变量
 ALLOW_API_KEY = os.getenv("ALLOW_API_KEY")
+logger.info(f"ALLOW_API_KEY环境变量状态: {'已设置' if ALLOW_API_KEY else '未设置'}")
+
 if not ALLOW_API_KEY:
     raise ValueError("ALLOW_API_KEY environment variable is not set")
+
+# 打印API密钥的前4位用于调试
+logger.info(f"Loaded API key starting with: {ALLOW_API_KEY[:4] if len(ALLOW_API_KEY) >= 4 else ALLOW_API_KEY}")
 
 
 async def verify_api_key(authorization: Optional[str] = Header(None)) -> None:
