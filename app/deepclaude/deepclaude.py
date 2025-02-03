@@ -75,7 +75,7 @@ class DeepClaude:
                                 "delta": {
                                     "role": "assistant",
                                     "reasoning_content": content,
-                                    "content": content
+                                    "content": ""
                                 }
                             }]
                         }
