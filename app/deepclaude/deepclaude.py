@@ -80,31 +80,33 @@ class DeepClaude:
                         }
                         await output_queue.put(f"data: {json.dumps(response)}\n\n".encode('utf-8'))
                     elif content_type == "content":
-                        # 当收到 content 类型时，将完整的推理内容发送到 claude_queue，并结束 DeepSeek 流处理
+                        if not reasoning_content:
+                            logger.warning("DeepSeek 未返回推理内容就结束了流")
+                        # 即使推理内容为空，也发送到 claude_queue
                         await claude_queue.put("".join(reasoning_content))
                         break
             except Exception as e:
-                logger.error(f"处理 DeepSeek 流时发生错误: {e}")
+                logger.error(f"处理 DeepSeek 流时发生错误: {str(e)}", exc_info=True)
                 await claude_queue.put("")
-            # 用 None 标记 DeepSeek 任务结束
-            await output_queue.put(None)
+            finally:
+                # 用 None 标记 DeepSeek 任务结束
+                await output_queue.put(None)
         
         async def process_claude():
             try:
                 reasoning = await claude_queue.get()
                 if not reasoning:
-                    logger.error("未能获取到有效的推理内容")
-                    # 标记 Claude 任务结束
-                    await output_queue.put(None)
-                    return
-                # 构造 Claude 的输入消息
-                claude_messages = messages.copy()
-                claude_messages.append({
-                    "role": "assistant",
-                    "content": f"Here's my reasoning process:\n{reasoning}\n\nBased on this reasoning, I will now provide my response:"
-                })
-                # 处理可能 messages 内存在 role = system 的情况，如果有，则去掉当前这一条的消息对象
-                claude_messages = [message for message in claude_messages if message.get("role", "") != "system"]
+                    logger.error("未能获取到有效的推理内容，将直接使用 Claude 处理原始消息")
+                    # 当没有推理内容时，直接使用原始消息调用 Claude
+                    claude_messages = [message for message in messages if message.get("role", "") != "system"]
+                else:
+                    # 构造带推理内容的消息
+                    claude_messages = messages.copy()
+                    claude_messages.append({
+                        "role": "assistant",
+                        "content": f"Here's my reasoning process:\n{reasoning}\n\nBased on this reasoning, I will now provide my response:"
+                    })
+                    claude_messages = [message for message in claude_messages if message.get("role", "") != "system"]
 
                 async for content_type, content in self.claude_client.stream_chat(claude_messages, claude_model):
                     if content_type == "answer":
@@ -123,9 +125,10 @@ class DeepClaude:
                         }
                         await output_queue.put(f"data: {json.dumps(response)}\n\n".encode('utf-8'))
             except Exception as e:
-                logger.error(f"处理 Claude 流时发生错误: {e}")
-            # 用 None 标记 Claude 任务结束
-            await output_queue.put(None)
+                logger.error(f"处理 Claude 流时发生错误: {str(e)}", exc_info=True)
+            finally:
+                # 用 None 标记 Claude 任务结束
+                await output_queue.put(None)
         
         # 创建并发任务
         deepseek_task = asyncio.create_task(process_deepseek())
