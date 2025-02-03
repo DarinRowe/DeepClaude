@@ -63,6 +63,7 @@ class DeepSeekClient(BaseClient):
         
         accumulated_content = ""
         is_collecting_think = False
+        has_yielded_content = False
         
         async for chunk in self._make_request(headers, data):
             chunk_str = chunk.decode('utf-8')
@@ -73,6 +74,9 @@ class DeepSeekClient(BaseClient):
                     if line.startswith("data: "):
                         json_str = line[len("data: "):]
                         if json_str == "[DONE]":
+                            if not has_yielded_content:
+                                logger.info("流结束时未检测到内容，输出空内容")
+                                yield "content", ""
                             return
                         
                         data = json.loads(json_str)
@@ -89,6 +93,7 @@ class DeepSeekClient(BaseClient):
                                 if delta.get("reasoning_content") is None and delta.get("content"):
                                     content = delta["content"]
                                     logger.info(f"提取内容信息，推理阶段结束: {content}")
+                                    has_yielded_content = True
                                     yield "content", content
                             else:
                                 # 处理其他模型的输出
@@ -96,30 +101,27 @@ class DeepSeekClient(BaseClient):
                                     content = delta["content"]
                                     accumulated_content += content
                                     
-                                    # 检查累积的内容是否包含完整的 think 标签对
-                                    is_complete, processed_content = self._process_think_tag_content(accumulated_content)
-                                    
                                     if "<think>" in content and not is_collecting_think:
-                                        # 开始收集推理内容
                                         is_collecting_think = True
                                         yield "reasoning", content
                                     elif is_collecting_think:
                                         if "</think>" in content:
-                                            # 推理内容结束
                                             is_collecting_think = False
                                             yield "reasoning", content
-                                            # 输出空的 content 来触发 Claude 处理
+                                            has_yielded_content = True
                                             yield "content", ""
-                                            # 重置累积内容
                                             accumulated_content = ""
                                         else:
-                                            # 继续收集推理内容
                                             yield "reasoning", content
                                     else:
-                                        # 普通内容
+                                        has_yielded_content = True
                                         yield "content", content
                                         
             except json.JSONDecodeError as e:
-                logger.error(f"JSON 解析错误: {e}")
+                logger.error(f"JSON 解析错误: {str(e)}", exc_info=True)
             except Exception as e:
-                logger.error(f"处理 chunk 时发生错误: {e}")
+                logger.error(f"处理 chunk 时发生错误: {str(e)}", exc_info=True)
+        
+        if not has_yielded_content:
+            logger.info("流结束时未检测到内容，输出空内容")
+            yield "content", ""
